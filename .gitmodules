@@ -1,0 +1,6 @@
+[submodule "ludum-dare-30"]
+	path = ludum-dare-30
+	url = git@github.com:leafo/ludum-dare-30.git
+[submodule "lovekit"]
+	path = lovekit
+	url = git@github.com:leafo/lovekit.git

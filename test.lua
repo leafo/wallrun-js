@@ -1,0 +1,4 @@
+
+return {
+	thing = 100
+}
