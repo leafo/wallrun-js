@@ -3,6 +3,8 @@ js = require "js"
 
 package.path = "./?.lua;ludum-dare-30/?.lua;lovekit/?.lua"
 
+RESOURCE_PREFIX = "ludum-dare-30/"
+
 export setfenv = (fn, env) ->
   i = 1
   while true
@@ -51,7 +53,25 @@ class ImageFont
 
 class Image
   failfast_module @__name, @__base
+  width: 0
+  height: 0
+
   new: (@path) =>
+    @dom_image = js.new js.global.Image
+    @dom_image.src = "#{RESOURCE_PREFIX}#{@path}"
+
+    @dom_image\addEventListener "load", @\on_loaded, false
+
+    @dom_image\addEventListener(
+      "error"
+      -> js.global.console\error "Image failed to load: #{@path}"
+      false
+    )
+
+  on_loaded: =>
+    @loaded = true
+    @width = @dom_image.width
+    @height = @dom_image.height
 
   setFilter: (@filter_min, @filter_mag, anisotropy) =>
     if anisotropy
@@ -61,12 +81,38 @@ class Image
     if depth
       @wrap_depth = depth
 
-  getWidth: => 1
-  getHeight: => 1
+  getWidth: => @width
+  getHeight: => @height
+
+thn = (p, ...) -> p["then"] p, ...
 
 class AudioSource
   failfast_module @__name, @__base
+
+  @get_audio_context: =>
+    if rawget @, "audio_context"
+      return @audio_context
+
+    -- NOTE: audio context will be created disabled until there is user interaction
+    audio_cls = js.global.AudioContext or window.webkitAudioContext
+    @audio_context = js.new audio_cls
+
+    @audio_context
+
   new: (@path, source_type) =>
+    -- TODO: error handling
+    p = js.global\fetch("#{RESOURCE_PREFIX}#{@path}")
+    thn p, (_, res) ->
+      thn res\arrayBuffer!, (_, buffer) ->
+        context = @@get_audio_context!
+
+        if context
+          @dom_source = @@get_audio_context!\createBufferSource!
+          context\decodeAudioData buffer, (_, decoded_data) ->
+            @dom_source.buffer = decoded_data
+            @dom_source\connect context.destination
+        else
+          js.global.console\warn "Unable to get audio context right"
 
 _G.love = failfast_module nil, {
   graphics: failfast_module "graphics", {
