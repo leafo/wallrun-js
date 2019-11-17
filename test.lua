@@ -1,4 +1,0 @@
-
-return {
-	thing = 100
-}
